@@ -1,16 +1,13 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
 import pandas as pd
+from flask import request, jsonify
+from flask_cors import cross_origin
 
-app = Flask(__name__)
-CORS(app)  # Enable CORS for all requests
+# Load the CSV file (Make sure it's in the project root)
+df = pd.read_csv("marks.csv")
 
-# Load the CSV file with student marks
-df = pd.read_csv("marks.csv")  # Ensure this file is in the project root
-
-@app.route("/api", methods=["GET"])
-def get_marks():
-    names = request.args.getlist("name")  # Get all 'name' query params
+def handler(request):
+    """Serverless function to return student marks based on query params."""
+    names = request.args.getlist("name")  # Extract 'name' params from URL
     marks = []
 
     for name in names:
@@ -18,10 +15,8 @@ def get_marks():
         if not student.empty:
             marks.append(int(student["marks"].values[0]))  # Convert to int
         else:
-            marks.append(None)  # If name not found, return None
+            marks.append(None)  # Return None if student not found
 
-    return jsonify({"marks": marks})
-
-# Vercel expects a variable named `app`
-def handler(request, *args):
-    return app(request.environ, start_response)
+    response = jsonify({"marks": marks})
+    response.headers["Access-Control-Allow-Origin"] = "*"  # Enable CORS
+    return response
